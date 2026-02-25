@@ -1,0 +1,1 @@
+"""NeuroScope AI — UI modules."""
