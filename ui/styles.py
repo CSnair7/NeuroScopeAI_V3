@@ -28,6 +28,12 @@ TEXT_DANGER = (0.95, 0.30, 0.30, 0.95)
 # Waveform
 WAVEFORM_COLOR = (0.95, 0.20, 0.20, 0.90)  # thin red ECG trace
 WAVEFORM_NORMAL = (0.10, 0.45, 0.91, 0.90) # clean blue when normal
+WAVEFORM_GREEN = (0.20, 0.90, 0.30, 0.95)  # bright green ECG trace
+
+# Monitor display
+MONITOR_BG = (0.02, 0.02, 0.06, 0.55)      # semi-transparent background for waveform area
+GRID_COLOR = (0.15, 0.15, 0.25, 0.40)       # faint grid lines
+LEAD_LABEL_COLOR = (0.60, 0.60, 0.70, 0.85) # lead name labels
 
 
 # ---------------------------------------------------------------------------

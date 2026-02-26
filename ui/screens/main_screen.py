@@ -78,10 +78,10 @@ class MainScreen(Screen):
         )
         self._root.add_widget(self._display)
 
-        # Waveform overlay
+        # Waveform overlay (full-screen, aligned to image)
         self._overlay = NeuroOverlay(
-            size_hint=(1, 0.35),
-            pos_hint={"center_x": 0.5, "y": 0.35},
+            size_hint=(1, 1),
+            pos_hint={"center_x": 0.5, "center_y": 0.5},
         )
         self._root.add_widget(self._overlay)
 
@@ -202,6 +202,7 @@ class MainScreen(Screen):
                 mm_per_px_y=vision_result.mm_per_px_y,
                 lead_rows=vision_result.lead_rows or None,
                 sample_rate_hz=PIPELINE_SAMPLE_RATE_HZ,
+                original_image=vision_result.normalized_image,
             )
 
             # Module C: Electro-Physics
@@ -278,10 +279,11 @@ class MainScreen(Screen):
         else:
             self._status_label.text = ""
 
-        # Update waveform overlay (use first available lead)
-        primary_lead = leads[0]
-        self._overlay.update_waveform(
-            primary_lead.voltage_mv, primary_lead.time_s
+        # Update waveform overlay (aligned to image)
+        self._overlay.update_leads(
+            leads,
+            lead_rows=vision.lead_rows,
+            image_shape=(frame_bgr.shape[0], frame_bgr.shape[1]),
         )
 
         # Suspicious segments
@@ -291,7 +293,7 @@ class MainScreen(Screen):
         if model_output.suspicious_segments:
             self._overlay.update_suspicious_segments(
                 model_output.suspicious_segments,
-                total_samples=len(primary_lead.voltage_mv),
+                total_samples=len(leads[0].voltage_mv),
             )
         else:
             self._overlay.update_suspicious_segments([], 0)
