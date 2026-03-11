@@ -43,3 +43,9 @@ density.txt
 
 # Gemini agent artifacts
 .gemini/
+
+# Model files
+*.onnx
+*.onnx.data
+*.tflite
+*.ptl

@@ -5,6 +5,22 @@ Draws extracted ECG waveforms directly on top of the background image,
 aligned to the actual lead positions detected in the image. Each lead
 trace is drawn at the same vertical position where it appears in the
 original ECG image, providing visual confirmation of correct digitization.
+
+Fixes applied (vs original):
+  - Bug 1: Unpack 5-tuples from detect_lead_rows correctly
+            (y_start, y_end, x_start, x_end, name) not 3-tuple
+  - Bug 2: raw_pixel_row is already in full-image absolute coords —
+            removed the erroneous second addition of y_start
+  - Bug 3: Layout match condition relaxed from == to >= so partial
+            lead extraction still uses aligned rendering
+  - Bug 4: x_vals now scoped to the cell's x_start/x_end column
+  - Bug 5: x_vals now use x_start_clipped/x_end_clipped (the waveform-only
+           region after edge-chrome exclusion) instead of the full cell bounds.
+           raw_pixel_row has length (x_end_clipped - x_start_clipped), not
+           (x_end - x_start), so using the full cell produced a horizontal
+           stretch that mapped some data points into the label/chrome zone and
+           left others hanging past the right edge — the left/right bleed.
+            instead of stretching across the full image width
 """
 
 from kivy.uix.widget import Widget
@@ -18,6 +34,7 @@ from kivy.properties import (
 )
 from kivy.uix.label import Label
 import numpy as np
+from kivy.metrics import dp
 
 from ui.styles import (
     WAVEFORM_COLOR, WAVEFORM_GREEN, ACCENT_RED_GLOW,
@@ -26,6 +43,19 @@ from ui.styles import (
     FONT_SIZE_CAPTION, FONT_SIZE_DEBUG,
 )
 
+
+
+
+def _to_list(val):
+    """Convert numpy array to Python list for safe storage in Kivy ListProperty.
+    Kivy compares old vs new ListProperty values with != on every assignment.
+    numpy.__ne__ returns an array instead of a bool, causing:
+        ValueError: The truth value of an array is ambiguous.
+    Plain Python lists compare safely. _redraw converts back with np.asarray().
+    """
+    if hasattr(val, 'tolist'):
+        return val.tolist()
+    return val
 
 class NeuroOverlay(Widget):
     """
@@ -40,7 +70,8 @@ class NeuroOverlay(Widget):
     # Internal lead data
     _lead_data = ListProperty([])
 
-    # Image layout info: (y_start, y_end, name) tuples in image pixel coords
+    # Image layout info: (y_start, y_end, x_start, x_end, name) tuples
+    # in full-image pixel coords — 5-tuple format from detect_lead_rows.
     _lead_rows = ListProperty([])
 
     # Original image dimensions (h, w) for coordinate mapping
@@ -63,6 +94,8 @@ class NeuroOverlay(Widget):
         self._pulse_anim = None
         self._labels = []
 
+        self._row_by_name = {}  # name → (y_start,y_end,x_start,x_end,name)
+
         self.bind(
             _lead_data=self._redraw,
             _lead_rows=self._redraw,
@@ -84,22 +117,37 @@ class NeuroOverlay(Widget):
 
         Args:
             leads: list of LeadSignal objects
-            lead_rows: list of (y_start, y_end, name) from vision processor
+            lead_rows: list of (y_start, y_end, x_start, x_end, name)
+                       5-tuples from vision processor (full-image coords)
             image_shape: (height, width) of the original image
         """
         data = []
         for lead in leads:
+            rpr = getattr(lead, 'raw_pixel_row', None)
             data.append({
                 "name": lead.name,
-                "voltage_mv": lead.voltage_mv,
-                "time_s": lead.time_s,
-                "raw_pixel_row": getattr(lead, 'raw_pixel_row', None),
+                # Convert numpy arrays to Python lists before storing in
+                # ListProperty. Kivy's ListProperty compares old vs new value
+                # with != on every assignment; numpy.__ne__ returns an array
+                # instead of a bool, raising:
+                #   ValueError: The truth value of an array is ambiguous.
+                # _redraw converts back with np.asarray() for rendering.
+                "voltage_mv":      _to_list(lead.voltage_mv),
+                "time_s":          _to_list(lead.time_s),
+                "raw_pixel_row":   _to_list(rpr),
+                "x_start_clipped": getattr(lead, 'x_start_clipped', None),
+                "x_end_clipped":   getattr(lead, 'x_end_clipped',   None),
             })
 
         if image_shape is not None:
             self._image_shape = list(image_shape)
         if lead_rows is not None:
             self._lead_rows = list(lead_rows)
+            # Build name→row lookup so _draw_aligned can match by name
+            # rather than by index.  This prevents coordinate corruption
+            # when extract_leads skips a low-quality cell (continuity<5%),
+            # which would shift every subsequent lead's row assignment.
+            self._row_by_name = {row[4]: row for row in lead_rows}
         self._lead_data = data
 
     def update_waveform(self, voltage_mv, time_s):
@@ -109,8 +157,8 @@ class NeuroOverlay(Widget):
             return
         self._lead_data = [{
             "name": "Lead_I",
-            "voltage_mv": voltage_mv,
-            "time_s": time_s,
+            "voltage_mv": _to_list(voltage_mv),
+            "time_s":     _to_list(time_s),
         }]
 
     def update_suspicious_segments(self, segments, total_samples):
@@ -196,6 +244,15 @@ class NeuroOverlay(Widget):
         frac = img_row / img_h  # 0 at top, 1 at bottom
         return ry + rh * (1.0 - frac)  # invert: top → high Y
 
+    def _image_col_to_screen_x(self, img_col, img_rect):
+        """
+        Map an image pixel column to a screen X coordinate.
+        """
+        rx, _, rw, _ = img_rect
+        img_w = self._image_shape[1]
+        frac = img_col / img_w
+        return rx + rw * frac
+
     # ------------------------------------------------------------------
     # Rendering
     # ------------------------------------------------------------------
@@ -220,7 +277,10 @@ class NeuroOverlay(Widget):
             return
 
         img_rect = self._get_image_rect()
-        has_layout = (img_rect is not None and len(self._lead_rows) == n_leads)
+
+        # FIX (Bug 3): use >= instead of == so partial lead extraction
+        # still gets image-aligned rendering rather than falling back to strips.
+        has_layout = (img_rect is not None and len(self._lead_rows) >= n_leads)
 
         if has_layout:
             self._draw_aligned(img_rect)
@@ -236,9 +296,20 @@ class NeuroOverlay(Widget):
 
         with self.canvas.after:
             for i, lead in enumerate(self._lead_data):
-                y_start, y_end, name = self._lead_rows[i]
+                # Look up cell bounds by lead name (index-safe).
+                # If extract_leads skipped a low-quality cell, lead_data
+                # and lead_rows would have different lengths and index i
+                # would point to the wrong cell.  Name-based lookup is
+                # immune to skipped leads.
+                lead_name = lead.get("name", "")
+                row_info = self._row_by_name.get(lead_name)
+                if row_info is None and i < len(self._lead_rows):
+                    row_info = self._lead_rows[i]  # fallback to index
+                if row_info is None:
+                    continue
+                y_start, y_end, x_start, x_end, name = row_info
 
-                # Screen bounds for this lead strip
+                # Screen bounds for this lead strip (vertical)
                 screen_top = self._image_row_to_screen_y(y_start, img_rect)
                 screen_bot = self._image_row_to_screen_y(y_end, img_rect)
                 strip_h = abs(screen_top - screen_bot)
@@ -248,40 +319,93 @@ class NeuroOverlay(Widget):
                 strip_bot_screen = min(screen_top, screen_bot)
                 strip_top_screen = max(screen_top, screen_bot)
 
-                if strip_h < 3:
+                # Screen bounds for this lead strip (horizontal)
+                screen_x_left  = self._image_col_to_screen_x(x_start, img_rect)
+                screen_x_right = self._image_col_to_screen_x(x_end,   img_rect)
+                strip_w_screen = abs(screen_x_right - screen_x_left)
+
+                if strip_h < 3 or strip_w_screen < 3:
                     continue
 
-                # Semi-transparent strip background
-                Color(*MONITOR_BG)
-                Rectangle(
-                    pos=(rx, strip_bot_screen),
-                    size=(rw, strip_h),
-                )
+                # NOTE: No strip background drawn in aligned mode.
+                # The overlay sits directly on the camera image, so filling
+                # the cell area with MONITOR_BG would occlude the green ECG
+                # trace beneath it, creating the visual illusion that the red
+                # overlay trace is displaced from the actual waveform.
 
                 # Waveform trace using raw_pixel_row
                 raw_pixel_row = lead.get("raw_pixel_row")
                 if raw_pixel_row is not None and len(raw_pixel_row) > 0:
+                    # ---- Trim flat tails ----
+                    # When the argmax tracker runs past the real ECG waveform
+                    # into a uniform-glow region, it locks onto a single row,
+                    # producing a perfectly flat tail (constant values). Trim
+                    # these from both ends before rendering.
+                    rpr = np.asarray(raw_pixel_row, dtype=np.float32)
+                    n_full = len(rpr)
+
+                    # Find first index from left where value differs from rpr[0]
+                    trim_l = 0
+                    if n_full > 10:
+                        left_val = rpr[0]
+                        for ti in range(1, min(n_full // 4, 200)):
+                            if abs(rpr[ti] - left_val) > 1.5:
+                                trim_l = ti
+                                break
+                        else:
+                            trim_l = 0  # all same → don't trim
+
+                    # Find first index from right where value differs from rpr[-1]
+                    trim_r = n_full
+                    if n_full > 10:
+                        right_val = rpr[-1]
+                        for ti in range(n_full - 2, max(n_full - n_full // 4, n_full - 200), -1):
+                            if abs(rpr[ti] - right_val) > 1.5:
+                                trim_r = ti + 1
+                                break
+                        else:
+                            trim_r = n_full  # all same → don't trim
+
+                    if trim_r - trim_l < 10:
+                        trim_l, trim_r = 0, n_full  # safety: don't over-trim
+
+                    rpr_trimmed = rpr[trim_l:trim_r]
+
                     # Downsample for rendering
-                    n = len(raw_pixel_row)
+                    n = len(rpr_trimmed)
                     max_pts = 1200
                     if n > max_pts:
                         step = n // max_pts
-                        pixel_rows = raw_pixel_row[::step]
+                        pixel_rows = rpr_trimmed[::step]
                     else:
-                        pixel_rows = raw_pixel_row
+                        pixel_rows = rpr_trimmed
 
                     n_pts = len(pixel_rows)
 
-                    # Map each column to screen X
-                    col_indices = np.linspace(0, img_w - 1, n_pts)
+                    # Use the clipped x bounds, narrowed by the flat-tail trim
+                    xsc = lead.get("x_start_clipped")
+                    xec = lead.get("x_end_clipped")
+                    if xsc is not None and xec is not None and xec > xsc:
+                        # Adjust col range to account for trimmed samples
+                        px_per_col = (xec - xsc) / n_full if n_full > 0 else 1.0
+                        col_left  = xsc + trim_l * px_per_col
+                        col_right = xsc + (trim_r - 1) * px_per_col
+                    else:
+                        col_left  = x_start
+                        col_right = x_end - 1
+
+                    col_indices = np.linspace(col_left, col_right, n_pts)
                     x_vals = rx + (col_indices / img_w) * rw
 
-                    # Map each centroid row to screen Y
-                    # centroid_rows[j] is the row within the strip (0=top, strip_h-1=bottom)
-                    # Absolute image row = y_start + centroid_rows[j]
-                    abs_rows = y_start + pixel_rows
+                    # FIX (Bug 2): raw_pixel_row is already stored in
+                    # full-image absolute row coordinates (signal_processor.py
+                    # adds y_start before storing).  The old code added y_start
+                    # a second time, shifting every trace down by a full strip.
+                    abs_rows = pixel_rows  # already absolute — no +y_start
+
                     y_vals = np.array([
-                        self._image_row_to_screen_y(r, img_rect) for r in abs_rows
+                        self._image_row_to_screen_y(r, img_rect)
+                        for r in abs_rows
                     ])
 
                     points = []
@@ -294,23 +418,35 @@ class NeuroOverlay(Widget):
                             Color(*WAVEFORM_COLOR)
                         else:
                             Color(*WAVEFORM_GREEN)
-                        Line(points=points, width=1.5, cap="round", joint="round")
+                        Line(points=points, width=2.0, cap="round", joint="round")
 
-                # Suspicious segments
+                # Suspicious segments — clipped to cell column
                 if self.is_abnormal and self.suspicious_segments:
                     for seg in self.suspicious_segments:
-                        Color(0.95, 0.25, 0.25, self._pulse_alpha)
-                        Rectangle(
-                            pos=(seg["start_x"], strip_bot_screen),
-                            size=(seg["end_x"] - seg["start_x"], strip_h),
-                        )
+                        seg_x0 = max(seg["start_x"], screen_x_left)
+                        seg_x1 = min(seg["end_x"],   screen_x_right)
+                        if seg_x1 > seg_x0:
+                            Color(0.95, 0.25, 0.25, self._pulse_alpha)
+                            Rectangle(
+                                pos=(seg_x0, strip_bot_screen),
+                                size=(seg_x1 - seg_x0, strip_h),
+                            )
 
-        # Lead labels
+        # Lead labels — positioned at top-left of each cell column
         for i, lead in enumerate(self._lead_data):
-            y_start, y_end, name = self._lead_rows[i]
+            lead_name = lead.get("name", "")
+            row_info = self._row_by_name.get(lead_name)
+            if row_info is None and i < len(self._lead_rows):
+                row_info = self._lead_rows[i]
+            if row_info is None:
+                continue
+            y_start, y_end, x_start, x_end, name = row_info
+
             screen_top = self._image_row_to_screen_y(y_start, img_rect)
-            screen_bot = self._image_row_to_screen_y(y_end, img_rect)
+            screen_bot = self._image_row_to_screen_y(y_end,   img_rect)
             strip_top_screen = max(screen_top, screen_bot)
+
+            screen_x_left = self._image_col_to_screen_x(x_start, img_rect)
 
             short = name.replace("Lead_", "") if name.startswith("Lead_") else name
             lbl = Label(
@@ -319,12 +455,12 @@ class NeuroOverlay(Widget):
                 font_size=FONT_SIZE_CAPTION,
                 bold=True,
                 size_hint=(None, None),
-                size=(40, 20),
-                pos=(rx + 4, strip_top_screen - 22),
+                size=(dp(40), dp(20)),
+                pos=(screen_x_left + dp(4), strip_top_screen - dp(22)),
                 halign="left",
                 valign="middle",
             )
-            lbl.text_size = (40, 20)
+            lbl.text_size = (dp(40), dp(20))
             self.add_widget(lbl)
             self._labels.append(lbl)
 
@@ -375,8 +511,8 @@ class NeuroOverlay(Widget):
                     Line(points=[vx, inner_bot, vx, inner_top], width=0.5)
 
                 # Waveform
-                voltage = lead["voltage_mv"]
-                time_s = lead["time_s"]
+                voltage = np.asarray(lead["voltage_mv"], dtype=np.float32)
+                time_s  = np.asarray(lead["time_s"],     dtype=np.float32)
                 if len(voltage) > 0:
                     max_pts = 800
                     if len(voltage) > max_pts:

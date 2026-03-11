@@ -14,32 +14,45 @@ from typing import Optional
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(APP_DIR, "assets")
 FONTS_DIR = os.path.join(ASSETS_DIR, "fonts")
-CONFIG_FILE = os.path.join(APP_DIR, "neuroscope_config.json")
+
+_CONFIG_FILE_CACHE = None
+
+def get_config_path():
+    global _CONFIG_FILE_CACHE
+    if _CONFIG_FILE_CACHE is None:
+        if "ANDROID_ARGUMENT" in os.environ:
+            try:
+                from android.storage import app_storage_path
+                _CONFIG_FILE_CACHE = os.path.join(app_storage_path(), "neuroscope_config.json")
+            except ImportError:
+                _CONFIG_FILE_CACHE = os.path.join(APP_DIR, "neuroscope_config.json")
+        else:
+            _CONFIG_FILE_CACHE = os.path.join(APP_DIR, "neuroscope_config.json")
+    return _CONFIG_FILE_CACHE
 
 # ---------------------------------------------------------------------------
-# ECG Background Themes — HSV thresholds for trace segmentation
+# ECG Background Themes
 # ---------------------------------------------------------------------------
 
 @dataclass
 class ThemePreset:
     name: str
     display_name: str
-    # HSV lower/upper bounds for trace color
-    hsv_lower: tuple  # (H, S, V)
-    hsv_upper: tuple  # (H, S, V)
-    # Whether trace is brighter or darker than background
+    hsv_lower: tuple
+    hsv_upper: tuple
     trace_is_bright: bool
-    # Background dominant HSV range (for grid removal)
     bg_hsv_lower: tuple = (0, 0, 0)
     bg_hsv_upper: tuple = (180, 255, 255)
 
 
+# NOTE: blue_on_white intentionally removed from THEME_PRESETS (settings UI).
+# It is still present in vision_processor.BUILTIN_THEMES for auto-detection.
 THEME_PRESETS = {
     "green_on_black": ThemePreset(
         name="green_on_black",
         display_name="Green on Black",
-        hsv_lower=(35, 80, 80),
-        hsv_upper=(85, 255, 255),
+        hsv_lower=(25, 20, 35),
+        hsv_upper=(95, 255, 255),
         trace_is_bright=True,
         bg_hsv_lower=(0, 0, 0),
         bg_hsv_upper=(180, 255, 50),
@@ -93,7 +106,7 @@ TARGET_FPS = 30
 MAX_PIPELINE_LATENCY_MS = 150
 MAX_RAM_MB = 200
 PIPELINE_SAMPLE_RATE_HZ = 500.0
-SIGNAL_TENSOR_LENGTH = 5000  # samples per lead
+SIGNAL_TENSOR_LENGTH = 5000
 NUM_LEADS = 12
 
 # ---------------------------------------------------------------------------
@@ -105,15 +118,19 @@ class AppConfig:
     theme: str = DEFAULT_THEME
     auto_detect: bool = False
     debug_mode: bool = False
-    num_leads: int = 3              # 0 = auto-detect, 1–12 = user-specified
+    num_leads: int = 3
     sample_rate_hz: float = PIPELINE_SAMPLE_RATE_HZ
 
-    def save(self, path: str = CONFIG_FILE):
+    def save(self, path: str = None):
+        if path is None:
+            path = get_config_path()
         with open(path, "w") as f:
             json.dump(asdict(self), f, indent=2)
 
     @classmethod
-    def load(cls, path: str = CONFIG_FILE) -> "AppConfig":
+    def load(cls, path: str = None) -> "AppConfig":
+        if path is None:
+            path = get_config_path()
         if os.path.exists(path):
             with open(path, "r") as f:
                 data = json.load(f)

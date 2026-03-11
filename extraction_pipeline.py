@@ -3,21 +3,148 @@ ECG Signal Extraction Pipeline v2
 Supports: paper printouts, digital monitor screenshots, software plot exports, video frames.
 
 Dependencies:
-    pip install opencv-python numpy scipy scikit-image matplotlib
+    pip install opencv-python numpy
 """
 
 import cv2
 import numpy as np
-from scipy import signal, ndimage
-from skimage.transform import hough_line, hough_line_peaks
-import matplotlib.pyplot as plt
+import logging
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Optional
-import logging
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s | %(message)s")
 log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# scipy/skimage-free DSP helpers
+# ---------------------------------------------------------------------------
+
+def _gaussian_filter1d(arr, sigma):
+    if sigma <= 0 or len(arr) == 0:
+        return arr.copy().astype(np.float32)
+    radius = max(1, int(round(3 * sigma)))
+    ksize = 2 * radius + 1
+    row = arr.astype(np.float32).reshape(1, -1)
+    out = cv2.GaussianBlur(row, (ksize, 1), sigmaX=sigma, sigmaY=0,
+                           borderType=cv2.BORDER_REPLICATE)
+    return out.reshape(-1)
+
+
+def _median_filter1d(arr, size):
+    if size < 1:
+        return arr.copy().astype(np.float32)
+    if size % 2 == 0:
+        size += 1
+    pad = size // 2
+    padded = np.pad(arr.astype(np.float32), pad, mode='edge')
+    n = len(arr)
+    out = np.empty(n, dtype=np.float32)
+    for i in range(n):
+        out[i] = np.median(padded[i:i + size])
+    return out
+
+
+def _binary_closing_1d(arr, size):
+    if size < 1:
+        return arr.copy()
+    uint = arr.astype(np.uint8).reshape(1, -1)
+    k = np.ones((1, size), dtype=np.uint8)
+    dilated = cv2.dilate(uint, k, iterations=1)
+    closed  = cv2.erode(dilated, k, iterations=1)
+    return closed.reshape(-1).astype(bool)
+
+
+def _find_peaks_np(arr, height=None, distance=None):
+    arr = np.asarray(arr, dtype=np.float64)
+    if len(arr) < 3:
+        return np.array([], dtype=int), {}
+    prev = arr[:-2]
+    curr = arr[1:-1]
+    nxt  = arr[2:]
+    peaks = np.where((curr > prev) & (curr > nxt))[0] + 1
+    if height is not None:
+        peaks = peaks[arr[peaks] >= height]
+    if distance is not None and len(peaks) > 1:
+        keep = [peaks[0]]
+        for p in peaks[1:]:
+            if p - keep[-1] >= distance:
+                keep.append(p)
+        peaks = np.array(keep, dtype=int)
+    return peaks, {}
+
+
+def _butter_bandpass_filtfilt(x, low_hz, high_hz, fs, order=2):
+    """Zero-phase Butterworth bandpass filter (pure numpy)."""
+    nyq = fs / 2.0
+    low_n  = max(low_hz  / nyq, 0.001)
+    high_n = min(high_hz / nyq, 0.999)
+    if low_n >= high_n or len(x) < 3:
+        return x.copy()
+    try:
+        wl = 2.0 * np.tan(np.pi * low_n)
+        wh = 2.0 * np.tan(np.pi * high_n)
+        bw = wh - wl
+        w0 = np.sqrt(wl * wh)
+        k = np.arange(1, order + 1)
+        poles_lp = np.exp(1j * np.pi * (2*k - 1) / (2*order) + 1j * np.pi / 2)
+        bp_poles = []
+        for p in poles_lp:
+            disc = (bw * p)**2 - 4 * w0**2
+            sq = np.sqrt(disc)
+            bp_poles += [(bw*p + sq)/2, (bw*p - sq)/2]
+        z_poles = [(1 + p/2)/(1 - p/2) for p in bp_poles]
+        z_zeros  = [1.0]*order + [-1.0]*order
+        b = np.poly(z_zeros).real
+        a = np.poly(z_poles).real
+        wc = np.sqrt(low_n * high_n) * np.pi
+        z  = np.exp(1j * wc)
+        h  = sum(b[i]*z**(-i) for i in range(len(b))) / sum(a[i]*z**(-i) for i in range(len(a)))
+        gain = abs(h)
+        if gain > 1e-12:
+            b /= gain
+
+        def lfilter(b, a, x):
+            m = max(len(b), len(a))
+            zi = np.zeros(m - 1)
+            y  = np.empty(len(x))
+            for i, xi in enumerate(x):
+                acc  = b[0]*xi + zi[0]
+                y[i] = acc
+                zi   = np.array([((b[j+1]*xi if j+1 < len(b) else 0) -
+                                  a[j+1]*acc + (zi[j+1] if j+2 < m else 0))
+                                 for j in range(m - 2)] + [0])[:-1]
+            return y
+
+        y1 = lfilter(b, a, x.astype(np.float64))
+        return lfilter(b, a, y1[::-1])[::-1].astype(np.float32)
+    except Exception:
+        return x.copy()
+
+
+def _hough_line_spacings(gray):
+    """
+    Use cv2.HoughLines to detect horizontal and vertical grid lines and
+    return their median spacings (replaces skimage hough_line).
+    Returns (horiz_spacings, vert_spacings) as sorted lists of float.
+    """
+    edges = cv2.Canny(gray, 30, 80)
+    lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold=50)
+    if lines is None:
+        return [], []
+    horiz, vert = [], []
+    for line in lines:
+        rho, theta = line[0]
+        # theta near 0 or pi = horizontal line
+        if abs(theta) < np.radians(10) or abs(theta - np.pi) < np.radians(10):
+            horiz.append(abs(rho))
+        # theta near pi/2 = vertical line
+        elif abs(theta - np.pi/2) < np.radians(10):
+            vert.append(abs(rho))
+    return sorted(horiz), sorted(vert)
+
+
 
 
 # ---------------------------------------------------------------------------
@@ -389,14 +516,7 @@ def calibrate(
 
 def _calibrate_paper(gray: np.ndarray) -> CalibrationResult:
     """Hough transform grid detection with dual 1mm/5mm frequency validation."""
-    edges = cv2.Canny(gray, 30, 80)
-    tested = np.linspace(-np.pi/2, np.pi/2, 360, endpoint=False)
-    h_sp, angles, dists = hough_line(edges, theta=tested)
-    _, a_pk, d_pk = hough_line_peaks(h_sp, angles, dists,
-                                      min_distance=5, threshold=0.3*h_sp.max())
-
-    horiz = [d for a, d in zip(a_pk, d_pk) if abs(a) < np.radians(10)]
-    vert  = [d for a, d in zip(a_pk, d_pk) if abs(a - np.pi/2) < np.radians(10)]
+    horiz, vert = _hough_line_spacings(gray)
 
     px_div_x = _spacing_to_px_per_div(vert)
     px_div_y = _spacing_to_px_per_div(horiz)
@@ -491,7 +611,7 @@ def detect_lead_panels(
     # Rows where almost all pixels are background = panel separator
     is_separator = row_means > 0.90
     # Morphologically close small gaps in separators
-    is_separator = ndimage.binary_closing(is_separator, structure=np.ones(10))
+    is_separator = _binary_closing_1d(is_separator, 10)
 
     # Find transitions to get panel extents
     transitions = np.diff(is_separator.astype(int))
@@ -567,7 +687,7 @@ def extract_lead_signals(
 
         # Rolling median baseline (200ms window)
         window = max(3, int(0.2 * sample_rate_hz))
-        baseline_px = ndimage.median_filter(voltage_px, size=window, mode="nearest")
+        baseline_px = _median_filter1d(voltage_px, size=window)
 
         # Convert to mV
         # Negate: image y increases downward, voltage increases upward
@@ -580,8 +700,7 @@ def extract_lead_signals(
 
         # For video: additional high-pass filter to remove monitor brightness flicker
         if calibration.source_type == SourceType.VIDEO:
-            b, a = signal.butter(2, 0.5 / (sample_rate_hz / 2), btype='high')
-            voltage_mv = signal.filtfilt(b, a, voltage_mv)
+            voltage_mv = _butter_bandpass_filtfilt(voltage_mv, 0.5, 40.0, sample_rate_hz, order=2)
 
         time_s = np.arange(w) * calibration.sec_per_px
         snr = _compute_snr(voltage_mv)
@@ -642,9 +761,9 @@ def quality_control(
         if lead.continuity_pct < CONTINUITY_THRESHOLD:
             reasons.append(f"{lead.name} CONTINUITY_FAIL: {lead.continuity_pct:.1f}%")
 
-        r_peaks, _ = signal.find_peaks(lead.voltage_mv,
-                                        height=QRS_AMP_RANGE_MV[0],
-                                        distance=int(0.3 * sample_rate_hz))
+        r_peaks, _ = _find_peaks_np(lead.voltage_mv,
+                                    height=QRS_AMP_RANGE_MV[0],
+                                    distance=int(0.3 * sample_rate_hz))
         if len(r_peaks) == 0:
             reasons.append(f"{lead.name} NO_QRS: No R-peaks above {QRS_AMP_RANGE_MV[0]} mV")
             continue
@@ -661,10 +780,13 @@ def quality_control(
                 reasons.append(f"{lead.name} IRREGULAR_RR: CV={rr_cv:.2f} "
                                "(arrhythmia or motion artifact)")
 
-        freqs, psd = signal.welch(lead.voltage_mv, fs=sample_rate_hz,
-                                   nperseg=min(256, len(lead.voltage_mv)))
-        hf_ratio = float(psd[(freqs>=25)&(freqs<=40)].sum()
-                         / (psd[freqs <= sample_rate_hz/2].sum() + 1e-12))
+        # HF artifact detection via spectral ratio (Welch-free approximation)
+        fft_mag = np.abs(np.fft.rfft(lead.voltage_mv))
+        freqs   = np.fft.rfftfreq(len(lead.voltage_mv), d=1.0/sample_rate_hz)
+        hf_mask = (freqs >= 25) & (freqs <= 40)
+        tot_mask = freqs <= sample_rate_hz / 2
+        hf_ratio = (float(fft_mag[hf_mask].sum()**2) /
+                    (float(fft_mag[tot_mask].sum()**2) + 1e-12))
         if hf_ratio > HF_ARTIFACT_THRESHOLD:
             reasons.append(f"{lead.name} MOTION_ARTIFACT: HF ratio={hf_ratio:.2f}")
 

@@ -1,0 +1,7 @@
+Lead_I xsc=66 xec=1483 rpx_len=1417
+Lead_II xsc=35 xec=1460 rpx_len=1425
+Lead_III xsc=38 xec=1489 rpx_len=1451
+row: Lead_I x=0-1489
+row: Lead_II x=0-1489
+row: Lead_III x=0-1489
+imgw=1489

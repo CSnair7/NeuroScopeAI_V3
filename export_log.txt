@@ -1,0 +1,67 @@
+C:\Users\Chinmay\isef\NeuroScopeAI_V3\scripts\export_tflite.py:331: UserWarning: # 'dynamic_axes' is not recommended when dynamo=True, and may lead to 'torch._dynamo.exc.UserError: Constraints violated.' Supply the 'dynamic_shapes' argument instead if export is unsuccessful.
+  torch.onnx.export(
+W0311 18:56:08.731000 36636 site-packages\torch\onnx\_internal\exporter\_compat.py:125] Setting ONNX exporter to use operator set version 18 because the requested opset_version 17 is a lower version than we have implementations for. Automatic version conversion will be performed, which may not be successful at converting to the requested version. If version conversion is unsuccessful, the opset version of the exported model will be kept at 18. Please consider setting opset_version >=18 to leverage latest ONNX features
+W0311 18:56:09.142000 36636 site-packages\torch\onnx\_internal\exporter\_registration.py:110] torchvision is not installed. Skipping torchvision::nms
+W0311 18:56:09.143000 36636 site-packages\torch\onnx\_internal\exporter\_registration.py:110] torchvision is not installed. Skipping torchvision::roi_align
+W0311 18:56:09.144000 36636 site-packages\torch\onnx\_internal\exporter\_registration.py:110] torchvision is not installed. Skipping torchvision::roi_pool
+[1/5] Loading checkpoint: pipeline/v16_best.pt
+    Loaded 452,619 parameters, num_classes=4
+[2/5] Exporting to ONNX: C:\Users\Chinmay\isef\NeuroScopeAI_V3\pipeline\v16_best.onnx
+    [OK] Patched ElectroPhysicsEngine -> branchless (ONNX-safe)
+    [OK] Patched 5 FFT/branch modules -> ONNX-safe
+    Pre-export verification: probs_specific shape = torch.Size([1, 4])
+[torch.onnx] Obtain model graph for `OnnxWrapper([...]` with `torch.export.export(..., strict=False)`...
+[torch.onnx] Traceback (most recent call last):
+  File "C:\Users\Chinmay\isef\NeuroScopeAI_V3\scripts\export_tflite.py", line 558, in <module>
+    main()
+    ~~~~^^
+  File "C:\Users\Chinmay\isef\NeuroScopeAI_V3\scripts\export_tflite.py", line 531, in main
+    export_onnx(model, onnx_path)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Chinmay\isef\NeuroScopeAI_V3\scripts\export_tflite.py", line 331, in export_onnx
+    torch.onnx.export(
+    ~~~~~~~~~~~~~~~~~^
+        wrapper,
+        ^^^^^^^^
+    ...<13 lines>...
+        do_constant_folding=True,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Chinmay\AppData\Local\Programs\Python\Python313\Lib\site-packages\torch\onnx\__init__.py", line 296, in export
+    return _compat.export_compat(
+           ~~~~~~~~~~~~~~~~~~~~~^
+        model,
+        ^^^^^^
+    ...<20 lines>...
+        legacy_export_kwargs=legacy_export_kwargs,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Chinmay\AppData\Local\Programs\Python\Python313\Lib\site-packages\torch\onnx\_internal\exporter\_compat.py", line 154, in export_compat
+    onnx_program = _core.export(
+        model,
+    ...<11 lines>...
+        verbose=verbose,
+    )
+  File "C:\Users\Chinmay\AppData\Local\Programs\Python\Python313\Lib\site-packages\torch\onnx\_internal\exporter\_flags.py", line 27, in wrapper
+    return func(*args, **kwargs)
+  File "C:\Users\Chinmay\AppData\Local\Programs\Python\Python313\Lib\site-packages\torch\onnx\_internal\exporter\_core.py", line 1360, in export
+    result = strategy(model, args, kwargs, dynamic_shapes=dynamic_shapes)
+  File "C:\Users\Chinmay\AppData\Local\Programs\Python\Python313\Lib\site-packages\torch\onnx\_internal\exporter\_capture_strategies.py", line 129, in __call__
+    self._success(model)
+    ~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\Chinmay\AppData\Local\Programs\Python\Python313\Lib\site-packages\torch\onnx\_internal\exporter\_capture_strategies.py", line 253, in _success
+    self._verbose_print(
+    ~~~~~~~~~~~~~~~~~~~^
+        f"Obtain model graph for `{model_repr}` with `torch.export.export(..., strict=False)`... \u2705"
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Chinmay\AppData\Local\Programs\Python\Python313\Lib\site-packages\torch\onnx\_internal\exporter\_capture_strategies.py", line 31, in <lambda>
+    return lambda *args, **kwargs: print("[torch.onnx]", *args, **kwargs)
+                                   ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Chinmay\AppData\Local\Programs\Python\Python313\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2705' in position 92: character maps to <undefined>

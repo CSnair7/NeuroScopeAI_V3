@@ -10,6 +10,7 @@ from kivy.uix.label import Label
 from kivy.graphics import Color, RoundedRectangle, Line
 from kivy.animation import Animation
 from kivy.properties import BooleanProperty, DictProperty
+from kivy.metrics import dp, sp
 
 from ui.styles import (
     BG_GLASS, BG_GLASS_BORDER, GLASS_RADIUS, GLASS_BORDER_WIDTH,
@@ -31,10 +32,10 @@ class DebugOverlay(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.orientation = "vertical"
-        self.padding = 8
-        self.spacing = 2
+        self.padding = dp(8)
+        self.spacing = dp(2)
         self.size_hint = (0.45, None)
-        self.height = 160
+        self.height = dp(160)
         self.pos_hint = {"right": 0.98, "top": 0.98}
         self.opacity = 0
 
@@ -62,7 +63,7 @@ class DebugOverlay(BoxLayout):
             color=TEXT_MUTED,
             font_size=FONT_SIZE_DEBUG,
             size_hint_y=None,
-            height=14,
+            height=dp(16),
             halign="left",
         )
         self._title.bind(size=self._title.setter("text_size"))
@@ -85,7 +86,7 @@ class DebugOverlay(BoxLayout):
                 color=TEXT_MUTED,
                 font_size=FONT_SIZE_DEBUG,
                 size_hint_y=None,
-                height=14,
+                height=dp(16),
                 halign="left",
             )
             lbl.bind(size=lbl.setter("text_size"))

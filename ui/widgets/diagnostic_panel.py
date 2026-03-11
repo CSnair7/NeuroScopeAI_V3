@@ -6,6 +6,8 @@ Displays:
   - Normal: "Normal Sinus Rhythm — XX%" + confidence
 """
 
+import math
+
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.widget import Widget
@@ -16,6 +18,7 @@ from kivy.properties import (
     DictProperty, ListProperty,
 )
 from kivy.clock import Clock
+from kivy.metrics import dp, sp
 
 from ui.styles import (
     BG_GLASS, BG_GLASS_BORDER, GLASS_RADIUS, GLASS_BORDER_WIDTH,
@@ -33,7 +36,7 @@ class EntropyBar(Widget):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.size_hint_y = None
-        self.height = 8
+        self.height = dp(8)
         self.bind(pos=self._draw, size=self._draw, value=self._draw)
         Clock.schedule_once(self._draw, 0)
 
@@ -81,10 +84,10 @@ class DiagnosticPanel(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.orientation = "vertical"
-        self.padding = 16
-        self.spacing = 8
+        self.padding = dp(16)
+        self.spacing = dp(8)
         self.size_hint = (0.85, None)
-        self.height = 180
+        self.height = dp(180)
         self.pos_hint = {"center_x": 0.5, "y": 0.08}
         self.opacity = 0
 
@@ -111,7 +114,7 @@ class DiagnosticPanel(BoxLayout):
             color=ACCENT_AMBER,
             font_size=FONT_SIZE_BODY,
             size_hint_y=None,
-            height=24,
+            height=dp(24),
             halign="center",
         )
         self._status_label.bind(size=self._status_label.setter("text_size"))
@@ -123,7 +126,7 @@ class DiagnosticPanel(BoxLayout):
             font_size=FONT_SIZE_HEADING,
             markup=True,
             size_hint_y=None,
-            height=60,
+            height=dp(60),
             halign="left",
             valign="top",
         )
@@ -135,7 +138,7 @@ class DiagnosticPanel(BoxLayout):
             color=TEXT_SECONDARY,
             font_size=FONT_SIZE_CAPTION,
             size_hint_y=None,
-            height=20,
+            height=dp(20),
             halign="left",
         )
         self._conf_label.bind(size=self._conf_label.setter("text_size"))
@@ -211,9 +214,8 @@ class DiagnosticPanel(BoxLayout):
         probs = list(model_output.class_probabilities.values())
         probs_arr = [p for p in probs if p > 0]
         if probs_arr:
-            ent = -sum(p * (p if p > 0 else 1e-12) for p in probs_arr)
+            ent = -sum(p * math.log(p + 1e-12) for p in probs_arr)
             # Normalize: max entropy for N classes = log(N)
-            import math
             max_ent = math.log(max(len(probs_arr), 1))
             self.entropy = min(abs(ent) / max(max_ent, 1e-6), 1.0)
         else:

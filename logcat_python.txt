@@ -1,0 +1,30 @@
+03-07 18:57:05.513 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libpybundle.so
+03-07 18:57:05.513 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libopencv_calib3d.so
+03-07 18:57:05.513 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libopencv_gapi.so
+03-07 18:57:05.513 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libopencv_stitching.so
+03-07 18:57:05.514 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libmain.so
+03-07 18:57:05.514 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libc++_shared.so
+03-07 18:57:05.514 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libopencv_dnn.so
+03-07 18:57:05.514 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libopencv_objdetect.so
+03-07 18:57:05.514 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libsqlite3.so
+03-07 18:57:05.514 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libffi.so
+03-07 18:57:05.514 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libopencv_imgcodecs.so
+03-07 18:57:05.514 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libopencv_features2d.so
+03-07 18:57:05.514 22746 22746 V pythonutil: Checking pattern libSDL3\.so against libSDL2_image.so
+03-07 18:57:05.515 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libpython3.14.so
+03-07 18:57:05.515 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libSDL2.so
+03-07 18:57:05.515 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libopencv_video.so
+03-07 18:57:05.515 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libcrypto.so
+03-07 18:57:05.515 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libopencv_videoio.so
+03-07 18:57:05.515 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libopencv_imgproc.so
+03-07 18:57:05.515 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libopencv_flann.so
+03-07 18:57:05.515 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libpythonbin.so
+03-07 18:57:05.515 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libSDL2_ttf.so
+03-07 18:57:05.516 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libSDL2_mixer.so
+03-07 18:57:05.516 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libopencv_photo.so
+03-07 18:57:05.516 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libssl.so
+03-07 18:57:05.516 22746 22746 V pythonutil: Checking pattern libSDL3_image\.so against libopencv_highgui.so
+03-07 18:57:05.813  2041  7189 D WindowManagerServiceExtImpl: extractConfigInfoAndRealFlags rotation=0, screenDp=360, residentWS:0, win=Window{8a0fe19 u0 org.neuroscope.neuroscope/org.kivy.android.PythonActivity}
+03-07 18:57:05.814  2041  7189 V WindowManager: Relayout Window{8a0fe19 u0 org.neuroscope.neuroscope/org.kivy.android.PythonActivity}: viewVisibility=8, oldvis=4, req=1080x2400, vsysui=, x=0, y=0
+03-07 18:57:05.828  2041  7189 D WindowManagerServiceExtImpl: extractConfigInfoAndRealFlags rotation=0, screenDp=360, residentWS:0, win=Window{8a0fe19 u0 org.neuroscope.neuroscope/org.kivy.android.PythonActivity}
+03-07 18:57:05.829  2041  7189 V WindowManager: Relayout Window{8a0fe19 u0 org.neuroscope.neuroscope/org.kivy.android.PythonActivity}: viewVisibility=8, oldvis=8, req=1080x2400, vsysui=LAYOUT_STABLE, x=0, y=0

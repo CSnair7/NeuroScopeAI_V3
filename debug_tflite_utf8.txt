@@ -1,0 +1,456 @@
+﻿python : C:\Users\Chi
+nmay\isef\NeuroScopeA
+I_V3\scripts\export_t
+flite.py:331: 
+UserWarning: # 
+'dynamic_axes' is 
+not recommended when 
+dynamo=True, and may 
+lead to 'torch._dynam
+o.exc.UserError: 
+Constraints 
+violated.' Supply 
+the 'dynamic_shapes' 
+argument instead if 
+export is 
+unsuccessful.
+At line:1 char:1
++ python -X utf8 scri
+pts/export_tflite.py 
+--checkpoint 
+pipeline/v16_bes ...
++ ~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (C:\User   
+ s\Chinma...s uns    
+uccessful.:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+  torch.onnx.export(
+W0311 
+18:59:19.965000 
+27176 site-packages\t
+orch\onnx\_internal\e
+xporter\_compat.py:12
+5] Setting ONNX 
+exporter to use 
+operator set version 
+18 because the 
+requested 
+opset_version 17 is 
+a lower version than 
+we have 
+implementations for. 
+Automatic version 
+conversion will be 
+performed, which may 
+not be successful at 
+converting to the 
+requested version. 
+If version 
+conversion is 
+unsuccessful, the 
+opset version of the 
+exported model will 
+be kept at 18. 
+Please consider 
+setting 
+opset_version >=18 
+to leverage latest 
+ONNX features
+W0311 
+18:59:20.376000 
+27176 site-packages\t
+orch\onnx\_internal\e
+xporter\_registration
+.py:110] torchvision 
+is not installed. 
+Skipping 
+torchvision::nms
+W0311 
+18:59:20.377000 
+27176 site-packages\t
+orch\onnx\_internal\e
+xporter\_registration
+.py:110] torchvision 
+is not installed. 
+Skipping torchvision:
+:roi_align
+W0311 
+18:59:20.378000 
+27176 site-packages\t
+orch\onnx\_internal\e
+xporter\_registration
+.py:110] torchvision 
+is not installed. 
+Skipping 
+torchvision::roi_pool
+C:\Users\Chinmay\AppD
+ata\Local\Programs\Py
+thon\Python313\Lib\co
+pyreg.py:99: 
+FutureWarning: `isins
+tance(treespec, 
+LeafSpec)` is 
+deprecated, use `isin
+stance(treespec, 
+TreeSpec) and 
+treespec.is_leaf()` 
+instead.
+  return 
+cls.__new__(cls, 
+*args)
+C:\Users\Chinmay\AppD
+ata\Local\Programs\Py
+thon\Python313\Lib\si
+te-packages\torch\onn
+x\_internal\exporter\
+_onnx_program.py:460:
+ UserWarning: # The 
+axis name: batch 
+will not be used, 
+since it shares the 
+same shape 
+constraints with 
+another axis: batch.
+  rename_mapping = _d
+ynamic_shapes.create_
+rename_mapping(
+The model version 
+conversion is not 
+supported by the 
+onnxscript version 
+converter and 
+fallback is enabled. 
+The model will be 
+converted using the 
+onnx C API (target 
+version: 17).
+Failed to convert 
+the model to the 
+target version 17 
+using the ONNX C 
+API. The model was 
+not modified
+Traceback (most 
+recent call last):
+  File "C:\Users\Chin
+may\AppData\Local\Pro
+grams\Python\Python31
+3\Lib\site-packages\o
+nnxscript\version_con
+verter\__init__.py", 
+line 120, in call
+    converted_proto 
+= _c_api_utils.call_o
+nnx_api(
+        func=_partial
+_convert_version, 
+model=model
+    )
+  File "C:\Users\Chin
+may\AppData\Local\Pro
+grams\Python\Python31
+3\Lib\site-packages\o
+nnxscript\version_con
+verter\_c_api_utils.p
+y", line 65, in 
+call_onnx_api
+    result = 
+func(proto)
+  File "C:\Users\Chin
+may\AppData\Local\Pro
+grams\Python\Python31
+3\Lib\site-packages\o
+nnxscript\version_con
+verter\__init__.py", 
+line 115, in _partial
+_convert_version
+    return onnx.versi
+on_converter.convert_
+version(
+           ~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~^
+        proto, target
+_version=self.target_
+version
+        ^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^
+    )
+    ^
+  File "C:\Users\Chin
+may\AppData\Local\Pro
+grams\Python\Python31
+3\Lib\site-packages\o
+nnx\version_converter
+.py", line 39, in 
+convert_version
+    
+converted_model_str 
+= C.convert_version(m
+odel_str, 
+target_version)
+RuntimeError: D:\a\on
+nx\onnx\onnx/version_
+converter/adapters/ax
+es_input_to_attribute
+.h:65: adapt: 
+Assertion `node->hasA
+ttribute(kaxes)` 
+failed: No 
+initializer or 
+constant input to 
+node found
+2026-03-11 
+18:59:30.884413: I te
+nsorflow/core/util/po
+rt.cc:153] oneDNN 
+custom operations 
+are on. You may see 
+slightly different 
+numerical results 
+due to 
+floating-point 
+round-off errors 
+from different 
+computation orders. 
+To turn them off, 
+set the environment 
+variable `TF_ENABLE_O
+NEDNN_OPTS=0`.
+2026-03-11 
+18:59:33.676522: I te
+nsorflow/core/util/po
+rt.cc:153] oneDNN 
+custom operations 
+are on. You may see 
+slightly different 
+numerical results 
+due to 
+floating-point 
+round-off errors 
+from different 
+computation orders. 
+To turn them off, 
+set the environment 
+variable `TF_ENABLE_O
+NEDNN_OPTS=0`.
+C:\Users\Chinmay\isef
+\cardioguardnet_v12.p
+y:762: 
+TracerWarning: 
+Converting a tensor 
+to a Python boolean 
+might cause the 
+trace to be 
+incorrect. We can't 
+record the data flow 
+of Python values, so 
+this value will be 
+treated as a 
+constant in the 
+future. This means 
+that the trace might 
+not generalize to 
+other inputs!
+  if C < 
+self.num_leads:
+C:\Users\Chinmay\isef
+\cardioguardnet_v12.p
+y:360: 
+TracerWarning: 
+Converting a tensor 
+to a Python boolean 
+might cause the 
+trace to be 
+incorrect. We can't 
+record the data flow 
+of Python values, so 
+this value will be 
+treated as a 
+constant in the 
+future. This means 
+that the trace might 
+not generalize to 
+other inputs!
+  if 
+can_recover_1.any():
+C:\Users\Chinmay\isef
+\cardioguardnet_v12.p
+y:365: 
+TracerWarning: 
+Converting a tensor 
+to a Python boolean 
+might cause the 
+trace to be 
+incorrect. We can't 
+record the data flow 
+of Python values, so 
+this value will be 
+treated as a 
+constant in the 
+future. This means 
+that the trace might 
+not generalize to 
+other inputs!
+  if 
+can_recover_2.any():
+C:\Users\Chinmay\isef
+\cardioguardnet_v12.p
+y:370: 
+TracerWarning: 
+Converting a tensor 
+to a Python boolean 
+might cause the 
+trace to be 
+incorrect. We can't 
+record the data flow 
+of Python values, so 
+this value will be 
+treated as a 
+constant in the 
+future. This means 
+that the trace might 
+not generalize to 
+other inputs!
+  if 
+can_recover_0.any():
+C:\Users\Chinmay\isef
+\cardioguardnet_v12.p
+y:383: 
+TracerWarning: 
+Converting a tensor 
+to a Python boolean 
+might cause the 
+trace to be 
+incorrect. We can't 
+record the data flow 
+of Python values, so 
+this value will be 
+treated as a 
+constant in the 
+future. This means 
+that the trace might 
+not generalize to 
+other inputs!
+  if need.any():
+C:\Users\Chinmay\isef
+\cardioguardnet_v12.p
+y:217: 
+TracerWarning: 
+Converting a tensor 
+to a Python boolean 
+might cause the 
+trace to be 
+incorrect. We can't 
+record the data flow 
+of Python values, so 
+this value will be 
+treated as a 
+constant in the 
+future. This means 
+that the trace might 
+not generalize to 
+other inputs!
+  if wins.shape[1] < 
+2:
+C:\Users\Chinmay\isef
+\cardioguardnet_v12.p
+y:243: 
+TracerWarning: 
+Converting a tensor 
+to a Python boolean 
+might cause the 
+trace to be 
+incorrect. We can't 
+record the data flow 
+of Python values, so 
+this value will be 
+treated as a 
+constant in the 
+future. This means 
+that the trace might 
+not generalize to 
+other inputs!
+  if wins.shape[1] < 
+2:
+C:\Users\Chinmay\isef
+\cardioguardnet_v12.p
+y:278: 
+TracerWarning: 
+Converting a tensor 
+to a Python boolean 
+might cause the 
+trace to be 
+incorrect. We can't 
+record the data flow 
+of Python values, so 
+this value will be 
+treated as a 
+constant in the 
+future. This means 
+that the trace might 
+not generalize to 
+other inputs!
+  if wins.shape[1] < 
+2:
+C:\Users\Chinmay\isef
+\NeuroScopeAI_V3\scri
+pts\export_tflite.py:
+484: 
+DeprecationWarning: 
+Lite Interpreter is 
+deprecated. Please 
+consider switching 
+to ExecuTorch.       
+      https://docs.py
+torch.org/executorch/
+stable/getting-starte
+d.html
+  optimized._save_for
+_lite_interpreter(out
+put_path)
+[1/5] Loading checkpoint: pipeline/v16_best.pt
+    Loaded 452,619 parameters, num_classes=4
+[2/5] Exporting to ONNX: C:\Users\Chinmay\isef\NeuroScopeAI_V3\pipeline\v16_best.onnx
+    [OK] Patched ElectroPhysicsEngine -> branchless (ONNX-safe)
+    [OK] Patched 5 FFT/branch modules -> ONNX-safe
+    Pre-export verification: probs_specific shape = torch.Size([1, 4])
+[torch.onnx] Obtain model graph for `OnnxWrapper([...]` with `torch.export.export(..., strict=False)`...
+[torch.onnx] Obtain model graph for `OnnxWrapper([...]` with `torch.export.export(..., strict=False)`... Γ£à
+[torch.onnx] Run decomposition...
+[torch.onnx] Run decomposition... Γ£à
+[torch.onnx] Translate the graph into ONNX...
+[torch.onnx] Translate the graph into ONNX... Γ£à
+Applied 129 of general pattern rewrite rules.
+    [OK] ONNX exported: 0.7 MB
+[3/5] Verifying ONNX output...
+    Max difference (probs_specific): 0.000000
+    [OK] ONNX verification PASSED
+[4/5] Converting ONNX -> TFLite (quantize=int8)
+
+    [FAIL] onnx-tf not found.
+    Install: pip install onnx-tf tensorflow
+    Or use the ONNX file with onnxruntime-mobile.
+
+[1/5] Loading checkpoint: pipeline/v16_best.pt
+    Loaded 452,619 parameters, num_classes=4
+[ALT] Exporting TorchScript for PyTorch Mobile: C:\Users\Chinmay\isef\NeuroScopeAI_V3\pipeline\v16_best_mobile.ptl
+    [OK] TorchScript Mobile saved: 1.9 MB
+
+[5/5] Export complete! 
+
+Deployment options:
+  1. TFLite      -> tflite-runtime on Android (smallest)
+  2. TorchScript -> pytorch_android_lite (most compatible)
+  3. ONNX        -> onnxruntime-mobile (best balance)

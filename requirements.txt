@@ -4,8 +4,13 @@
 kivy[base]==2.3.1
 opencv-python-headless>=4.8.0
 numpy>=1.24.0
-scipy>=1.10.0
-scikit-image>=0.20.0
+onnxruntime>=1.15.0
 
-# Optional: for matplotlib-based debugging (not required at runtime)
+# Desktop only: for model export (scripts/export_tflite.py)
+# torch>=2.0.0
+# onnx>=1.14.0
+# onnxscript
+# tensorflow>=2.14.0
+
+# Optional: for matplotlib-based debugging
 # matplotlib>=3.7.0
